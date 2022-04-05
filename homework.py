@@ -1,15 +1,15 @@
-from dataclasses import dataclass
 from collections import namedtuple
+
+from helpers import datetime_check_format
 
 Homework = namedtuple('Homework', ['subject', 'deadline', 'text'])
 
 
 def hw_from_text(text):
-    try:
-        subject, deadline, text = map(lambda s: s.strip(), text.split(';'))
-        return Homework(subject, deadline, text)
-    except Exception:
-        return None
+    subject, deadline, text = map(lambda s: s.strip(), text.split(';'))
+    if not datetime_check_format(deadline):
+        raise Exception
+    return Homework(subject, deadline, text)
 
 
 def hw_list_to_str(hw_list):

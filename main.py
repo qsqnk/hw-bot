@@ -1,6 +1,10 @@
+import logging
+
 from bot import Bot
 from config import *
 from db import *
+
+logging.basicConfig(level=logging.INFO)
 
 if __name__ == '__main__':
     db = DB(credentials_path=DB_CREDENTIALS, url=DB_URL)
