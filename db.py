@@ -2,7 +2,7 @@ import firebase_admin
 import logging
 from firebase_admin import credentials, db
 
-from helpers import datetime_from_str, difference_in_days
+from helpers import datetime_from_str, difference_in_days, current_time
 from homework import Homework
 
 
@@ -19,6 +19,11 @@ class DB:
         homeworks.append(homework._asdict())
         self.root.update({'hw': homeworks})
 
+    def remove_with_expired_deadline(self):
+        homeworks = self.get_all_homeworks_without_update()
+        actual = [hw for hw in homeworks if current_time().time() <= datetime_from_str(hw['deadline']).time()]
+        self.root.set({'hw': actual})
+
     def get_by_deadline(self, deadline):
         homework = self.get_all_homeworks()
 
@@ -33,5 +38,9 @@ class DB:
         return [hw for hw in homeworks if hw['subject'] == subject]
 
     def get_all_homeworks(self):
+        self.remove_with_expired_deadline()
+        return self.get_all_homeworks_without_update()
+
+    def get_all_homeworks_without_update(self):
         homeworks = self.root.child('hw').get()
         return homeworks or []

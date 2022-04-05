@@ -1,6 +1,11 @@
 from datetime import datetime
+import pytz
 
+# TIME_ZONE = pytz.timezone('Europe/Moscow')
 DATE_FORMAT = '%d/%m/%y %H:%M'
+
+def current_time():
+    return datetime.now()
 
 
 def text_after_prefix(prefix, text: str):
@@ -10,7 +15,7 @@ def text_after_prefix(prefix, text: str):
 """
 
 Format: '%d/%m/%y %H:%M'
-         day/month/year hours/minutes
+         day/month/year hours:minutes
 Example: 01.02.21 23:43
 
 """
