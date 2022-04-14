@@ -82,7 +82,7 @@ class Bot:
     def exec(self, event):
         if event.type == VkBotEventType.MESSAGE_NEW:
             msg_obj = event.obj['message']
-            text = msg_obj['text'].strip()
+            text = msg_obj['text'].strip().lower()
             logging.info('\n===============================\n'
                          f"Message received: {text}\n"
                          f"from peer_id {msg_obj['peer_id']}\n"
