@@ -16,7 +16,7 @@ def text_after_prefix(prefix, text: str):
 
 Format: '%d/%m/%y %H:%M'
          day/month/year hours:minutes
-Example: 01.02.21 23:43
+Example: 01/02/21 23:43
 
 """
 

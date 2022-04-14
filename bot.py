@@ -62,7 +62,7 @@ class Bot:
                                           'Пример: get deadline 3\n\n'
                                           'Получить домашки по названию предмета: get subject\n'
                                           'Пример: get веб\n\n'
-                                          f"Список доступных предметов: {' '.join(subjects)}\n")
+                                          f"Список доступных предметов: {', '.join(subjects)}\n")
 
     def exec_add_subj(self, msg, _):
         subj = msg.strip()
