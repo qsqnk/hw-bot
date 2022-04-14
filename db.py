@@ -2,7 +2,7 @@ import firebase_admin
 import logging
 from firebase_admin import credentials, db
 
-from helpers import datetime_from_str, difference_in_days, current_time
+from helpers import datetime_from_str, difference_in_days, utc_current_time, spb_to_utc
 from homework import Homework
 
 
@@ -21,7 +21,7 @@ class DB:
 
     def remove_with_expired_deadline(self):
         homeworks = self.get_all_homeworks_without_update()
-        actual = [hw for hw in homeworks if current_time().time() <= datetime_from_str(hw['deadline']).time()]
+        actual = [hw for hw in homeworks if utc_current_time() <= spb_to_utc(datetime_from_str(hw['deadline']))]
         self.root.child('hw').set(actual)
 
     def add_subject(self, subject):

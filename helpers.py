@@ -1,16 +1,19 @@
 from datetime import datetime
+from datetime import timedelta
 import pytz
 
 # TIME_ZONE = pytz.timezone('Europe/Moscow')
 DATE_FORMAT = '%d/%m/%y %H:%M'
 
-def current_time():
-    return datetime.now()
+def utc_current_time():
+    return datetime.utcnow()
 
 
 def text_after_prefix(prefix, text: str):
     return text.partition(prefix)[2].strip()
 
+def spb_to_utc(dt):
+    return dt + timedelta(hours=-3)
 
 """
 
