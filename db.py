@@ -22,7 +22,15 @@ class DB:
     def remove_with_expired_deadline(self):
         homeworks = self.get_all_homeworks_without_update()
         actual = [hw for hw in homeworks if current_time().time() <= datetime_from_str(hw['deadline']).time()]
-        self.root.set({'hw': actual})
+        self.root.child('hw').set(actual)
+
+    def add_subject(self, subject):
+        subjects = self.get_subjects()
+        subjects.append(subject)
+        self.root.update({'subjects': subjects})
+
+    def get_subjects(self):
+        return self.root.child('subjects').get() or []
 
     def get_by_deadline(self, deadline):
         homework = self.get_all_homeworks()
