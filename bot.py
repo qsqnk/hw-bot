@@ -90,9 +90,13 @@ class Bot:
             self.exec_if_command(text, event)
 
     def start(self):
-        logging.info('Start listening')
-        for event in self.longpoll.listen():
-            self.exec(event)
+        while True:
+            try:
+                logging.info('Start listening')
+                for event in self.longpoll.listen():
+                    self.exec(event)
+            except Exception as e:
+                logging.error(e)
 
     def send_to_event_exciter(self, event, message):
         self.api.messages.send(message=message, peer_id=event.obj['message']['peer_id'], random_id=0)
