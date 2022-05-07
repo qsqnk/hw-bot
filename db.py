@@ -50,5 +50,5 @@ class DB:
         return self.get_all_homeworks_without_update()
 
     def get_all_homeworks_without_update(self):
-        homeworks = self.root.child('hw').get()
+        homeworks = [*filter(None, self.root.child('hw').get())]
         return homeworks or []
