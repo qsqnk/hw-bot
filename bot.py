@@ -1,6 +1,7 @@
 import vk_api
 import logging
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll
+from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
 from homework import hw_from_text, hw_list_to_str
 from helpers import *
@@ -9,11 +10,29 @@ from helpers import *
 class Bot:
 
     def __init__(self, api_key, group_id, db):
-        session = vk_api.VkApi(token=api_key)
+        self.session = vk_api.VkApi(token=api_key)
         self.group_id = group_id
-        self.api = session.get_api()
-        self.longpoll = VkBotLongPoll(session, group_id)
+        self.api = self.session.get_api()
+        self.longpoll = VkBotLongPoll(self.session, group_id)
+        self.subjects = db.get_subjects()
         self.db = db
+
+        keyboard = VkKeyboard(one_time=False)
+
+        for i, subject in enumerate(self.subjects):
+            keyboard.add_button(subject, color=VkKeyboardColor.POSITIVE)
+            if i % 3 == 2:
+                keyboard.add_line()
+
+        keyboard.add_line()
+        keyboard.add_button('На 1 день', color=VkKeyboardColor.PRIMARY)
+        keyboard.add_button('На 7 дней', color=VkKeyboardColor.PRIMARY)
+        keyboard.add_button('На 30 дней', color=VkKeyboardColor.PRIMARY)
+        keyboard.add_line()
+        keyboard.add_button('Все домашки', color=VkKeyboardColor.NEGATIVE)
+
+        self.main_keyboard = keyboard.get_keyboard()
+
         logging.info('Bot initialized')
 
     # @:param msg - message containing deadline info
@@ -25,27 +44,6 @@ class Bot:
             logging.error(e)
             self.send_to_event_exciter(event, 'Некорректный дедлайн')
 
-    # @:param msg - message containing subject info
-    def exec_get_by_subject(self, msg, event):
-        subjects = self.db.get_subjects()
-        if msg not in subjects:
-            self.send_to_event_exciter(event, 'Такого предмета нет')
-            return
-        hw = self.db.get_by_subject(msg)
-        self.send_to_event_exciter(event, hw_list_to_str(hw) if hw else 'Нет актуальных дз')
-
-    # @:param msg - message text after "get" command
-    def exec_get(self, msg, event):
-        if not msg:
-            self.send_to_event_exciter(event, 'Некорректный формат ввода\n'
-                                              'По предмету: get предмет\n'
-                                              'По количеству дней до дедлайна: get deadline n\n'
-                                              'Список доступных предметов доступен по сообщению help')
-        elif msg.startswith('deadline'):
-            self.exec_get_by_deadline(text_after_prefix('deadline', msg), event)
-        else:
-            self.exec_get_by_subject(msg, event)
-
     # @:param msg - message text after "add" command
     def exec_add_hw(self, msg, event):
         try:
@@ -56,28 +54,31 @@ class Bot:
             logging.error(e)
             self.send_to_event_exciter(event, 'Некорректный формат')
 
-    def exec_help(self, _, event):
-        subjects = self.db.get_subjects()
-        self.send_to_event_exciter(event, 'Получить домашки по кол-ву дней до дедлайна: get deadline days\n'
-                                          'Пример: get deadline 3\n\n'
-                                          'Получить домашки по названию предмета: get subject\n'
-                                          'Пример: get веб\n\n'
-                                          f"Список доступных предметов: {', '.join(subjects)}\n")
-
     def exec_add_subj(self, msg, _):
         subj = msg.strip()
         self.db.add_subject(subj)
 
     # @:param msg - message text with command
     def exec_if_command(self, msg, event):
-        if msg.startswith('add_hw'):
+        if msg.startswith('start'):
+            self.send_to_event_exciter(event, 'Выберите действие')
+        elif msg.startswith('add_hw'):
             self.exec_add_hw(text_after_prefix('add_hw', msg), event)
-        if msg.startswith('add_subj'):
+        elif msg.startswith('add_subj'):
             self.exec_add_subj(text_after_prefix('add_subj', msg), event)
-        if msg.startswith('get'):
-            self.exec_get(text_after_prefix('get', msg), event)
-        if msg.startswith('help'):
-            self.exec_help(msg, event)
+        elif msg.startswith('на 1 день') or msg.startswith('на 7 дней') or msg.startswith('на 30 дней'):
+            days = int(msg.split(' ')[1])
+            homeworks = self.db.get_by_deadline(days)
+            self.send_to_event_exciter(event, 'Нет актуальных дз' if not homeworks else hw_list_to_str(homeworks))
+        elif msg.startswith('все домашки'):
+            homeworks = self.db.get_all_homeworks()
+            self.send_to_event_exciter(event, 'Нет актуальных дз' if not homeworks else hw_list_to_str(homeworks))
+        elif msg in self.subjects:
+            homeworks = self.db.get_by_subject(msg)
+            self.send_to_event_exciter(event, 'Нет актуальных дз' if not homeworks else hw_list_to_str(homeworks))
+        else:
+            self.send_to_event_exciter(event, 'Неизвестная команда')
+
 
     def exec(self, event):
         if event.type == VkBotEventType.MESSAGE_NEW:
@@ -99,4 +100,7 @@ class Bot:
                 logging.error(e)
 
     def send_to_event_exciter(self, event, message):
-        self.api.messages.send(message=message, peer_id=event.obj['message']['peer_id'], random_id=0)
+        self.api.messages.send(message=message,
+                               peer_id=event.obj['message']['peer_id'],
+                               random_id=0,
+                               keyboard=self.main_keyboard)
