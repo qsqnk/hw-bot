@@ -1,12 +1,8 @@
 from typing import List
 
-import logging
 from pypika import MySQLQuery, CustomFunction, Table
-
 from src.model.homework import Homework
-from src.repository.database import execute_and_commit, execute_and_fetch
 
-current_time = 'CURTIME()'
 homeworks_t = Table('homeworks')
 subjects_t = Table('subjects')
 DateDiff = CustomFunction('DATEDIFF', ['deadline', 'current'])
@@ -14,8 +10,8 @@ DateDiff = CustomFunction('DATEDIFF', ['deadline', 'current'])
 
 class HomeworkRepository:
 
-    def __init__(self):
-        logging.info('Database initialized')
+    def __init__(self, database):
+        self.database = database
 
     """
     
@@ -27,7 +23,7 @@ class HomeworkRepository:
         query = MySQLQuery.into(homeworks_t).insert(
             homework.subject, homework.deadline, homework.text
         )
-        execute_and_commit(query)
+        self.database.execute_and_commit(query)
 
     """
     
@@ -39,7 +35,7 @@ class HomeworkRepository:
         query = MySQLQuery.from_(homeworks_t).delete().where(
             DateDiff(homeworks_t.deadline, 'CURTIME()') < 0
         )
-        execute_and_commit(query)
+        self.database.execute_and_commit(query)
 
     """
     
@@ -49,7 +45,7 @@ class HomeworkRepository:
 
     def add_subject(self, subject) -> None:
         query = MySQLQuery.into(subjects_t).insert(subject)
-        execute_and_commit(query)
+        self.database.execute_and_commit(query)
 
     """
     
@@ -59,8 +55,8 @@ class HomeworkRepository:
 
     def get_subjects(self) -> List[str]:
         query = MySQLQuery.from_(subjects_t).select(subjects_t.star)
-        subj = execute_and_fetch(query)
-        return [x[0] for x in subj] or []
+        subj = self.database.execute_and_fetch(query)
+        return [s for (s,) in subj] or []
 
     """
     
@@ -89,7 +85,7 @@ class HomeworkRepository:
 
     """
     
-    Removes expired homeworks and return actual
+    Removes homeworks with expired deadline and returns actual
     
     """
 
@@ -108,7 +104,6 @@ class HomeworkRepository:
         query = MySQLQuery.from_(homeworks_t).select(homeworks_t.star)
         return self.process_get_homeworks_query(query)
 
-    @staticmethod
-    def process_get_homeworks_query(query) -> List[Homework]:
-        query_result = execute_and_fetch(query)
+    def process_get_homeworks_query(self, query) -> List[Homework]:
+        query_result = self.database.execute_and_fetch(query)
         return [Homework(*h) for h in query_result] if query_result else []

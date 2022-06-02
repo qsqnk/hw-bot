@@ -21,12 +21,20 @@ class Bot:
 
         logging.info('Bot initialized')
 
+    def send_to_event_exciter(self, event, message):
+        self.api.messages.send(
+            message=message,
+            peer_id=event.obj['message']['peer_id'],
+            random_id=0,
+            keyboard=self.main_keyboard
+        )
+
     @staticmethod
-    def generate_keyboard(subjects):
+    def generate_keyboard(subjects, width):
         keyboard = VkKeyboard(one_time=False)
         for i, subject in enumerate(subjects):
             keyboard.add_button(subject, color=VkKeyboardColor.POSITIVE)
-            if i % 3 == 2:
+            if i % width == width - 1:
                 keyboard.add_line()
         keyboard.add_line()
         for text in ['На 1 день', 'На 7 дней', 'На 30 дней']:
@@ -89,18 +97,35 @@ class Bot:
 
     def exec_if_command(self, msg, event):
         if msg.startswith('start'):
+
             self.send_to_event_exciter(event, 'Выберите действие')
+
         elif msg.startswith('add_hw'):
-            self.exec_add_hw(text_after_prefix('add_hw', msg), event)
+
+            homework_text_repr = text_after_prefix('add_hw', msg)
+            self.exec_add_hw(homework_text_repr, event)
+
         elif msg.startswith('add_subj'):
-            self.exec_add_subj(text_after_prefix('add_subj', msg), event)
+
+            subject = text_after_prefix('add_subj', msg)
+            self.exec_add_subj(subject, event)
+
         elif msg.startswith('на 1 день') or msg.startswith('на 7 дней') or msg.startswith('на 30 дней'):
-            days = int(msg.split(' ')[1])
-            self.send_to_event_exciter(event, Homework.list_to_str(self.repository.get_by_deadline(days)))
+
+            deadline_in_days = int(msg.split(' ')[1])
+            actual_homeworks = Homework.list_to_str(self.repository.get_by_deadline(deadline_in_days))
+            self.send_to_event_exciter(event, actual_homeworks)
+
         elif msg.startswith('все домашки'):
-            self.send_to_event_exciter(event, Homework.list_to_str(self.repository.get_all_homeworks()))
+
+            all_homeworks = Homework.list_to_str(self.repository.get_all_homeworks())
+            self.send_to_event_exciter(event, all_homeworks)
+
         elif msg in self.repository.get_subjects():
-            self.send_to_event_exciter(event, Homework.list_to_str(self.repository.get_by_subject(msg)))
+
+            subject_homeworks = Homework.list_to_str(self.repository.get_by_subject(msg))
+            self.send_to_event_exciter(event, subject_homeworks)
+
         else:
             self.send_to_event_exciter(event, 'Неизвестная команда')
 
@@ -108,23 +133,20 @@ class Bot:
         if event.type == VkBotEventType.MESSAGE_NEW:
             msg_obj = event.obj['message']
             text = msg_obj['text'].strip().lower()
+            peer_id = msg_obj['peer_id']
+
             logging.info('\n===============================\n'
                          f"Message received: {text}\n"
-                         f"from peer_id {msg_obj['peer_id']}\n"
+                         f"from peer_id {peer_id}\n"
                          '===============================\n')
+
             self.exec_if_command(text, event)
 
     def start(self):
         while True:
             try:
-                logging.info('Start listening')
+                logging.info('Start longpolling')
                 for event in self.longpoll.listen():
                     self.exec_if_message(event)
             except Exception as e:
                 logging.error(e)
-
-    def send_to_event_exciter(self, event, message):
-        self.api.messages.send(message=message,
-                               peer_id=event.obj['message']['peer_id'],
-                               random_id=0,
-                               keyboard=self.main_keyboard)
