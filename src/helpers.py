@@ -1,19 +1,5 @@
 from datetime import datetime
 from datetime import timedelta
-import pytz
-
-# TIME_ZONE = pytz.timezone('Europe/Moscow')
-DATE_FORMAT = '%d/%m/%y %H:%M'
-
-def utc_current_time():
-    return datetime.utcnow()
-
-
-def text_after_prefix(prefix, text: str):
-    return text.partition(prefix)[2].strip()
-
-def spb_to_utc(dt):
-    return dt + timedelta(hours=-3)
 
 """
 
@@ -22,6 +8,16 @@ Format: '%d/%m/%y %H:%M'
 Example: 01/02/21 23:43
 
 """
+
+DATE_FORMAT = '%d/%m/%y %H:%M'
+
+
+def utc_current_time():
+    return datetime.utcnow()
+
+
+def to_utc(dt, delta=3):
+    return dt + timedelta(hours=-delta)
 
 
 def datetime_check_format(date):
@@ -46,6 +42,5 @@ def difference_in_days(dt1, dt2):
 
     return to_days(dt1) - to_days(dt2)
 
-
-def get_or(dictionary, key, default):
-    return dictionary[key] if key in dictionary else default
+def text_after_prefix(prefix, text: str):
+    return text.partition(prefix)[2].strip()
