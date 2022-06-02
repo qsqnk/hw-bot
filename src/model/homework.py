@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from src.helpers import *
@@ -10,24 +11,11 @@ class Homework:
         self.deadline = deadline
         self.text = text
 
-    """
-    
-    Returns dict representation of homework
-    
-    """
-
-    def as_dict(self):
-        return {
-            'subject': self.subject,
-            'deadline': datetime_to_str(self.deadline),
-            'text': self.text
-        }
-
-    """
+    """"
     
     Transforms text representation to homework object
     
-    Format: {subject} ; day/month/year hours:minutes ; description
+    Format: subject ; year-month-day ; description
     
     """
 
@@ -37,22 +25,6 @@ class Homework:
         if not datetime_check_format(deadline):
             raise Exception
         return Homework(subject, datetime_from_str(deadline), text)
-
-    """
-
-    Transforms dict representation to homework object
-
-    Format: { 'subject' ..., 'deadline': ..., 'text':... }
-
-    """
-
-    @staticmethod
-    def from_dict(dictionary: dict):
-        return Homework(
-            dictionary['subject'],
-            datetime_from_str(dictionary['deadline']),
-            dictionary['text']
-        )
 
     """
     

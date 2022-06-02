@@ -1,19 +1,20 @@
 from typing import List
 
-import firebase_admin
 import logging
-from firebase_admin import credentials, db
+from pypika import MySQLQuery, CustomFunction, Table
 
-from src.helpers import datetime_from_str, difference_in_days, utc_current_time, to_utc
 from src.model.homework import Homework
+from src.repository.database import execute_and_commit, execute_and_fetch
+
+current_time = 'CURTIME()'
+homeworks_t = Table('homeworks')
+subjects_t = Table('subjects')
+DateDiff = CustomFunction('DATEDIFF', ['deadline', 'current'])
 
 
 class HomeworkRepository:
 
-    def __init__(self, credentials_path, url):
-        cred = credentials.Certificate(credentials_path)
-        firebase_admin.initialize_app(cred, {'databaseURL': url})
-        self.root = db.reference()
+    def __init__(self):
         logging.info('Database initialized')
 
     """
@@ -23,7 +24,10 @@ class HomeworkRepository:
     """
 
     def add_homework(self, homework: Homework) -> None:
-        self.root.child('hw').set(self.get_all_homeworks() + homework.as_dict())
+        query = MySQLQuery.into(homeworks_t).insert(
+            homework.subject, homework.deadline, homework.text
+        )
+        execute_and_commit(query)
 
     """
     
@@ -32,12 +36,10 @@ class HomeworkRepository:
     """
 
     def remove_with_expired_deadline(self) -> None:
-        def check(homework):
-            return utc_current_time() <= to_utc(homework.deadline)
-
-        self.root.child('hw').set([
-            *filter(check, self.get_all_homeworks_without_update())
-        ])
+        query = MySQLQuery.from_(homeworks_t).delete().where(
+            DateDiff(homeworks_t.deadline, 'CURTIME()') < 0
+        )
+        execute_and_commit(query)
 
     """
     
@@ -46,7 +48,8 @@ class HomeworkRepository:
     """
 
     def add_subject(self, subject) -> None:
-        self.root.child('subjects').set(self.get_subjects() + subject)
+        query = MySQLQuery.into(subjects_t).insert(subject)
+        execute_and_commit(query)
 
     """
     
@@ -55,7 +58,9 @@ class HomeworkRepository:
     """
 
     def get_subjects(self) -> List[str]:
-        return self.root.child('subjects').get() or []
+        query = MySQLQuery.from_(subjects_t).select(subjects_t.star)
+        subj = execute_and_fetch(query)
+        return [x[0] for x in subj] or []
 
     """
     
@@ -65,11 +70,10 @@ class HomeworkRepository:
     """
 
     def get_by_deadline(self, deadline_in_days) -> List[Homework]:
-        def check(hw):
-            datetime = datetime_from_str(hw.deadline)
-            return difference_in_days(datetime, datetime.now()) <= deadline_in_days
-
-        return [*filter(check, self.get_all_homeworks())]
+        query = MySQLQuery.from_(homeworks_t).select(homeworks_t.star).where(
+            DateDiff(homeworks_t.deadline, 'CURTIME()') < deadline_in_days
+        )
+        return self.process_get_homeworks_query(query)
 
     """
     
@@ -78,7 +82,10 @@ class HomeworkRepository:
     """
 
     def get_by_subject(self, subject) -> List[Homework]:
-        return [*filter(lambda homework: homework.subject == subject, self.get_all_homeworks())]
+        query = MySQLQuery.from_(homeworks_t).select(homeworks_t.star).where(
+            homeworks_t.subject == subject
+        )
+        return self.process_get_homeworks_query(query)
 
     """
     
@@ -88,7 +95,8 @@ class HomeworkRepository:
 
     def get_all_homeworks(self) -> List[Homework]:
         self.remove_with_expired_deadline()
-        return self.get_all_homeworks_without_update()
+        query = MySQLQuery.from_(homeworks_t).select(homeworks_t.star)
+        return self.process_get_homeworks_query(query)
 
     """
     
@@ -97,5 +105,10 @@ class HomeworkRepository:
     """
 
     def get_all_homeworks_without_update(self) -> List[Homework]:
-        homeworks = self.root.child('hw').get()
-        return [*map(Homework.from_dict, homeworks)] if homeworks else []
+        query = MySQLQuery.from_(homeworks_t).select(homeworks_t.star)
+        return self.process_get_homeworks_query(query)
+
+    @staticmethod
+    def process_get_homeworks_query(query) -> List[Homework]:
+        query_result = execute_and_fetch(query)
+        return [Homework(*h) for h in query_result] if query_result else []

@@ -11,6 +11,7 @@ from src.repository.homework_repository import HomeworkRepository
 class Bot:
 
     def __init__(self, api_key, group_id, repository: HomeworkRepository):
+
         self.group_id = group_id
         self.session = vk_api.VkApi(token=api_key)
         self.api = self.session.get_api()
