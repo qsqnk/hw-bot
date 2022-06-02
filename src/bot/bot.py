@@ -17,7 +17,7 @@ class Bot:
         self.api = self.session.get_api()
         self.longpoll = VkBotLongPoll(self.session, group_id)
         self.repository = repository
-        self.main_keyboard = self.generate_keyboard(self.repository.get_subjects())
+        self.main_keyboard = self.generate_keyboard(self.repository.get_subjects(), width=3)
 
         logging.info('Bot initialized')
 
