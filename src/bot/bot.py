@@ -115,10 +115,12 @@ class Bot:
 
     def start(self):
         while True:
-
+            try:
                 logging.info('Start listening')
                 for event in self.longpoll.listen():
                     self.exec_if_message(event)
+            except Exception as e:
+                logging.error(e)
 
     def send_to_event_exciter(self, event, message):
         self.api.messages.send(message=message,
