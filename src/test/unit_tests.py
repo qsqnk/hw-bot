@@ -1,4 +1,7 @@
-# datetime tests
+import sys
+
+sys.path.insert(0, '../src')
+
 from src.hw_bot.helpers import datetime_check_format, text_after_prefix
 from src.hw_bot.model.homework import Homework
 
