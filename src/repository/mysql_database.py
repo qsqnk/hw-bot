@@ -2,8 +2,6 @@ import logging
 
 from mysql.connector import connect
 
-from src.config import *
-
 
 class MySQLDatabase:
 
@@ -13,7 +11,7 @@ class MySQLDatabase:
         self.host = host
         self.name = name
 
-    def with_connection(self, f):
+    def with_connection(self, decorated):
         def wrapper(*args, **kwargs):
             try:
                 connection = connect(
@@ -22,9 +20,9 @@ class MySQLDatabase:
                     user=self.user,
                     password=self.password
                 )
-                return f(*args, **kwargs, connection=connection)
-            except Exception as e:
-                logging.error(e)
+                return decorated(*args, **kwargs, connection=connection)
+            except Exception as connection_error:
+                logging.error(connection_error)
 
         return wrapper
 
@@ -38,8 +36,8 @@ class MySQLDatabase:
                 connection.commit()
             connection.close()
             return result
-        except Exception as e:
-            logging.error(e)
+        except Exception as execution_error:
+            logging.error(execution_error)
 
     def execute_and_fetch(self, query):
         return self.execute(query, commit=False, fetch=True)

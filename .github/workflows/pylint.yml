@@ -1,0 +1,22 @@
+name: Pylint
+
+on: [ push ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pylint
+          pip install pytest
+      - name: Analysing the code with pylint
+        run: |
+          pylint $(find . -path "./src/*" -name "*.py" | xargs) --disable=missing-docstring,unused-wildcard-import,no-value-for-parameter,import-error,broad-except,no-self-use,redundant-keyword-arg

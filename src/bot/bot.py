@@ -1,9 +1,10 @@
-import vk_api
 import logging
+
+import vk_api
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
-from src.helpers import *
+from src.helpers import text_after_prefix
 from src.model.homework import Homework
 from src.repository.homework_repository import HomeworkRepository
 
@@ -43,58 +44,34 @@ class Bot:
         keyboard.add_button('Все домашки', color=VkKeyboardColor.NEGATIVE)
         return keyboard.get_keyboard()
 
-    """
-
-    Processing a request for getting homework with given deadline
-
-    [msg] contains info about deadline in days
-
-    """
-
+    # Processing a request for getting homework with given deadline
+    # [msg] contains info about deadline in days
     def exec_get_by_deadline(self, msg, event):
         try:
             hw_list = self.repository.get_by_deadline(int(msg))
             self.send_to_event_exciter(event, Homework.list_to_str(hw_list))
-        except Exception as e:
-            logging.error(e)
+        except Exception as error:
+            logging.error(error)
             self.send_to_event_exciter(event, 'Некорректный дедлайн')
 
-    """
-
-    Processing a request for adding new homework
-
-    [msg] contains text representation of homework
-
-    """
-
+    # Processing a request for adding new homework
+    # [msg] contains text representation of homework
     def exec_add_hw(self, msg, event):
         try:
             self.repository.add_homework(Homework.from_text(msg))
             self.send_to_event_exciter(event, 'ДЗ успешно добавлено')
-        except Exception as e:
-            logging.error(e)
+        except Exception as error:
+            logging.error(error)
             self.send_to_event_exciter(event, 'Некорректный формат')
 
-    """
-        
-    Processing a request for adding new subject
-    
-    [msg] contains info about subject
-    
-    """
-
+    # Processing a request for adding new subject
+    # [msg] contains info about subject
     def exec_add_subj(self, msg, event):
         self.repository.add_subject(msg.strip())
         self.send_to_event_exciter(event, 'Предмет успешно добавлен')
 
-    """
-
-    Processing a request for command execution
-
-    [msg] user message
-
-    """
-
+    # Processing a request for command execution
+    # [msg] user message
     def exec_if_command(self, msg, event):
         if msg.startswith('start'):
 
@@ -110,10 +87,11 @@ class Bot:
             subject = text_after_prefix('add_subj', msg)
             self.exec_add_subj(subject, event)
 
-        elif msg.startswith('на 1 день') or msg.startswith('на 7 дней') or msg.startswith('на 30 дней'):
-
+        elif any(map(msg.startswith, ['На 1 день', 'На 7 дней', 'На 30 дней'])):
             deadline_in_days = int(msg.split(' ')[1])
-            actual_homeworks = Homework.list_to_str(self.repository.get_by_deadline(deadline_in_days))
+            actual_homeworks = Homework.list_to_str(
+                self.repository.get_by_deadline(deadline_in_days)
+            )
             self.send_to_event_exciter(event, actual_homeworks)
 
         elif msg.startswith('все домашки'):
@@ -129,6 +107,7 @@ class Bot:
         else:
             self.send_to_event_exciter(event, 'Неизвестная команда')
 
+    # Processing an even if it is new message to bot
     def exec_if_message(self, event):
         if event.type == VkBotEventType.MESSAGE_NEW:
             msg_obj = event.obj['message']
@@ -136,17 +115,18 @@ class Bot:
             peer_id = msg_obj['peer_id']
 
             logging.info('\n===============================\n'
-                         f"Message received: {text}\n"
-                         f"from peer_id {peer_id}\n"
-                         '===============================\n')
+                         'Message received: %s\n'
+                         'from peer_id %d\n'
+                         '===============================\n', text, peer_id)
 
             self.exec_if_command(text, event)
 
+    # Starts long polling
     def start(self):
         while True:
             try:
-                logging.info('Start longpolling')
+                logging.info('Start long polling')
                 for event in self.longpoll.listen():
                     self.exec_if_message(event)
-            except Exception as e:
-                logging.error(e)
+            except ConnectionError as connection_error:
+                logging.error(connection_error)
