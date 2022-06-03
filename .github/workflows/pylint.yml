@@ -20,5 +20,5 @@ jobs:
           pip install pytest
       - name: Analysing the code with pylint
         run: |
-          pylint $(find . -path "./src/hw_bot/*" -name "*.py" | xargs) --disable=missing-docstring,unused-wildcard-import,no-value-for-parameter,import-error,broad-except,redundant-keyword-arg
+          pylint $(find . -path "./src/hw_bot/*" -name "*.py" | xargs) --disable=missing-docstring,unused-wildcard-import,no-value-for-parameter,import-error,broad-except,redundant-keyword-arg,too-few-public-methods
           pytest  $(find . -path "./src/test/unit_tests.py")
