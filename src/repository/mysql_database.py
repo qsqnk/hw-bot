@@ -23,6 +23,7 @@ class MySQLDatabase:
                 return decorated(*args, **kwargs, connection=connection)
             except Exception as connection_error:
                 logging.error(connection_error)
+                return None
 
         return wrapper
 
@@ -38,6 +39,7 @@ class MySQLDatabase:
             return result
         except Exception as execution_error:
             logging.error(execution_error)
+            return None
 
     def execute_and_fetch(self, query):
         return self.execute(query, commit=False, fetch=True)
