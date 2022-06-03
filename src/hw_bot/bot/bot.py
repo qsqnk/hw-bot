@@ -13,28 +13,38 @@ class Bot:
 
     def __init__(self, api_key, group_id, repository: HomeworkRepository):
 
-        self.group_id = group_id
-        self.session = vk_api.VkApi(token=api_key)
-        self.api = self.session.get_api()
-        self.longpoll = VkBotLongPoll(self.session, group_id)
-        self.repository = repository
-        self.main_keyboard = self.generate_keyboard(self.repository.get_subjects(), width=3)
+        self._group_id = group_id
+        self._session = vk_api.VkApi(token=api_key)
+        self._api = self._session.get_api()
+        self._longpoll = VkBotLongPoll(self._session, group_id)
+        self._repository = repository
+        self._main_keyboard = self._generate_keyboard(self._repository.get_subjects(), width=3)
 
         logging.info('Bot initialized')
 
+    # Starts long polling
+    def start(self):
+        while True:
+            try:
+                logging.info('Start long polling')
+                for event in self._longpoll.listen():
+                    self._exec_if_message(event)
+            except ConnectionError as connection_error:
+                logging.error(connection_error)
+
     # Sends [message] to user who excited [event] by peer_id
-    def send_to_event_exciter(self, event, message):
-        self.api.messages.send(
+    def _send_to_event_exciter(self, event, message):
+        self._api.messages.send(
             message=message,
             peer_id=event.obj['message']['peer_id'],
             random_id=0,
-            keyboard=self.main_keyboard
+            keyboard=self._main_keyboard
         )
 
     # Utility method for generating user keyboard
     # [width] means how many subjects will be in one row
     @staticmethod
-    def generate_keyboard(subjects, width):
+    def _generate_keyboard(subjects, width):
         keyboard = VkKeyboard(one_time=False)
         for i, subject in enumerate(subjects):
             keyboard.add_button(subject, color=VkKeyboardColor.POSITIVE)
@@ -49,69 +59,69 @@ class Bot:
 
     # Processing a request for getting homework with given deadline
     # [msg] contains info about deadline in days
-    def exec_get_by_deadline(self, msg, event):
+    def _exec_get_by_deadline(self, msg, event):
         try:
-            hw_list = self.repository.get_by_deadline(int(msg))
-            self.send_to_event_exciter(event, Homework.list_to_str(hw_list))
+            hw_list = self._repository.get_by_deadline(int(msg))
+            self._send_to_event_exciter(event, Homework.list_to_str(hw_list))
         except Exception as error:
             logging.error(error)
-            self.send_to_event_exciter(event, 'Некорректный дедлайн')
+            self._send_to_event_exciter(event, 'Некорректный дедлайн')
 
     # Processing a request for adding new homework
     # [msg] contains text representation of homework
-    def exec_add_hw(self, msg, event):
+    def _exec_add_hw(self, msg, event):
         try:
-            self.repository.add_homework(Homework.from_text(msg))
-            self.send_to_event_exciter(event, 'ДЗ успешно добавлено')
+            self._repository.add_homework(Homework.from_text(msg))
+            self._send_to_event_exciter(event, 'ДЗ успешно добавлено')
         except Exception as error:
             logging.error(error)
-            self.send_to_event_exciter(event, 'Некорректный формат')
+            self._send_to_event_exciter(event, 'Некорректный формат')
 
     # Processing a request for adding new subject
     # [msg] contains info about subject
-    def exec_add_subj(self, msg, event):
-        self.repository.add_subject(msg.strip())
-        self.send_to_event_exciter(event, 'Предмет успешно добавлен')
+    def _exec_add_subj(self, msg, event):
+        self._repository.add_subject(msg.strip())
+        self._send_to_event_exciter(event, 'Предмет успешно добавлен')
 
     # Processing a request for command execution
     # [msg] user message
-    def exec_if_command(self, msg, event):
+    def _exec_if_command(self, msg, event):
         if msg.startswith('start'):
 
-            self.send_to_event_exciter(event, 'Выберите действие')
+            self._send_to_event_exciter(event, 'Выберите действие')
 
         elif msg.startswith('add_hw'):
 
             homework_text_repr = text_after_prefix('add_hw', msg)
-            self.exec_add_hw(homework_text_repr, event)
+            self._exec_add_hw(homework_text_repr, event)
 
         elif msg.startswith('add_subj'):
 
             subject = text_after_prefix('add_subj', msg)
-            self.exec_add_subj(subject, event)
+            self._exec_add_subj(subject, event)
 
         elif any(map(msg.startswith, ['На 1 день', 'На 7 дней', 'На 30 дней'])):
             deadline_in_days = int(msg.split(' ')[1])
             actual_homeworks = Homework.list_to_str(
-                self.repository.get_by_deadline(deadline_in_days)
+                self._repository.get_by_deadline(deadline_in_days)
             )
-            self.send_to_event_exciter(event, actual_homeworks)
+            self._send_to_event_exciter(event, actual_homeworks)
 
         elif msg.startswith('все домашки'):
 
-            all_homeworks = Homework.list_to_str(self.repository.get_all_homeworks())
-            self.send_to_event_exciter(event, all_homeworks)
+            all_homeworks = Homework.list_to_str(self._repository.get_all_homeworks())
+            self._send_to_event_exciter(event, all_homeworks)
 
-        elif msg in self.repository.get_subjects():
+        elif msg in self._repository.get_subjects():
 
-            subject_homeworks = Homework.list_to_str(self.repository.get_by_subject(msg))
-            self.send_to_event_exciter(event, subject_homeworks)
+            subject_homeworks = Homework.list_to_str(self._repository.get_by_subject(msg))
+            self._send_to_event_exciter(event, subject_homeworks)
 
         else:
-            self.send_to_event_exciter(event, 'Неизвестная команда')
+            self._send_to_event_exciter(event, 'Неизвестная команда')
 
     # Processing an even if it is new message to bot
-    def exec_if_message(self, event):
+    def _exec_if_message(self, event):
         if event.type == VkBotEventType.MESSAGE_NEW:
             msg_obj = event.obj['message']
             text = msg_obj['text'].strip().lower()
@@ -122,14 +132,4 @@ class Bot:
                          'from peer_id %d\n'
                          '===============================\n', text, peer_id)
 
-            self.exec_if_command(text, event)
-
-    # Starts long polling
-    def start(self):
-        while True:
-            try:
-                logging.info('Start long polling')
-                for event in self.longpoll.listen():
-                    self.exec_if_message(event)
-            except ConnectionError as connection_error:
-                logging.error(connection_error)
+            self._exec_if_command(text, event)
