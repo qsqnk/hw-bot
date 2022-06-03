@@ -20,4 +20,3 @@ jobs:
       - name: Analysing the code with pylint
         run: |
           pylint $(find . -path "./src/*" -name "*.py" | xargs) --disable=missing-docstring,unused-wildcard-import,no-value-for-parameter,import-error,broad-except,redundant-keyword-arg,too-few-public-methods
-          pytest  $(find . -path "./src/unit_tests.py")
