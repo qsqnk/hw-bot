@@ -1,6 +1,6 @@
 from typing import List
 from pypika import MySQLQuery, CustomFunction, Table
-from src.hw_bot.model.homework import Homework
+from src.model.homework import Homework
 
 HOMEWORKS = Table('homeworks')
 SUBJECTS = Table('subjects')

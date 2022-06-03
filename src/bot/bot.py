@@ -4,9 +4,9 @@ import vk_api
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
-from src.hw_bot.helpers import text_after_prefix
-from src.hw_bot.model.homework import Homework
-from src.hw_bot.repository.homework_repository import HomeworkRepository
+from src.helpers import text_after_prefix
+from src.model.homework import Homework
+from src.repository.homework_repository import HomeworkRepository
 
 
 class Bot:

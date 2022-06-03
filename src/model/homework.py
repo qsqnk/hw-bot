@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from src.hw_bot.helpers import datetime_check_format, datetime_from_str
+from src.helpers import datetime_check_format, datetime_from_str
 
 
 class Homework:

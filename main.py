@@ -1,7 +1,7 @@
-from src.hw_bot.bot.bot import Bot
-from src.hw_bot.config import *
-from src.hw_bot.repository.homework_repository import HomeworkRepository
-from src.hw_bot.repository.mysql_database import *
+from src.bot.bot import Bot
+from src.config import *
+from src.repository.homework_repository import HomeworkRepository
+from src.repository.mysql_database import *
 
 logging.basicConfig(level=logging.INFO)
 
