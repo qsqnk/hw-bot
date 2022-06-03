@@ -22,6 +22,7 @@ class Bot:
 
         logging.info('Bot initialized')
 
+    # Sends [message] to user who excited [event] by peer_id
     def send_to_event_exciter(self, event, message):
         self.api.messages.send(
             message=message,
@@ -30,6 +31,8 @@ class Bot:
             keyboard=self.main_keyboard
         )
 
+    # Utility method for generating user keyboard
+    # [width] means how many subjects will be in one row
     @staticmethod
     def generate_keyboard(subjects, width):
         keyboard = VkKeyboard(one_time=False)
