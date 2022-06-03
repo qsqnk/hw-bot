@@ -13,11 +13,12 @@ jobs:
           python-version: "3.9"
       - name: Install dependencies
         run: |
+          export PYTHONPATH=$PYTHONPATH:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pylint
           pip install pytest
       - name: Analysing the code with pylint
         run: |
-          pylint $(find . -path "./src/*" -name "*.py" | xargs) --disable=missing-docstring,unused-wildcard-import,no-value-for-parameter,import-error,broad-except,redundant-keyword-arg
-          pytest  $(find . -path "./src/test.py")
+          pylint $(find . -path "./src/hw_bot/*" -name "*.py" | xargs) --disable=missing-docstring,unused-wildcard-import,no-value-for-parameter,import-error,broad-except,redundant-keyword-arg
+          pytest  $(find . -path "./src/test/unit_tests.py")
